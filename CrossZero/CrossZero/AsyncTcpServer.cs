@@ -11,10 +11,12 @@ namespace CrossZero
     public class AsyncTcpServer
     {
         public delegate void OnPeerConnected(Peer peer);
+        public delegate void OnTcpError(string text);
 
         public IPEndPoint EndPoint { get; private set; }
         public Peer Client { get; private set; }
         public OnPeerConnected onPeerConnected { get; set; }
+        public OnTcpError onTcpError { get; set; }
         TcpListener listener;
 
         public AsyncTcpServer(IPEndPoint endPoint) {
@@ -24,10 +26,19 @@ namespace CrossZero
 
         public async void Listen()
         {
-            listener.Start();
-            Client = new Peer(await listener.AcceptTcpClientAsync());
-            Client.ListenData();
-            onPeerConnected?.Invoke(Client);
+            try
+            {
+                listener.Start();
+                Client = new Peer(await listener.AcceptTcpClientAsync());
+                Client.ListenData();
+                onPeerConnected?.Invoke(Client);
+            }
+            catch(Exception ex)
+            {
+                onTcpError?.Invoke(ex.ToString());
+            }
+
+
         }
 
     }

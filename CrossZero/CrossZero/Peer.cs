@@ -23,20 +23,24 @@ namespace CrossZero
 
         public async void ListenData()
         {
-            var stream = client.GetStream();
-            var buffer = new byte[1024];
-            while (true)
+            try
             {
-                string str = "";
+                var stream = client.GetStream();
+                var buffer = new byte[1024];
                 while (true)
                 {
-                    int len = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    if (len == 0) break;
-                    str += Encoding.UTF8.GetString(buffer, 0, len);
-                    if (!stream.DataAvailable) break;
+                    string str = "";
+                    while (true)
+                    {
+                        int len = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        if (len == 0) break;
+                        str += Encoding.UTF8.GetString(buffer, 0, len);
+                        if (!stream.DataAvailable) break;
+                    }
+                    onReceiveMessage?.Invoke(str);//is not null
                 }
-                onReceiveMessage?.Invoke(str);//is not null
             }
+            catch { }
         }
 
         public void SendChatMessage(string message)

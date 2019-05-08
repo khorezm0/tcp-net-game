@@ -27,8 +27,10 @@ namespace CrossZero
             button1.Enabled = false;
             button2.Enabled = false;
             AsyncTcpServer serv = new AsyncTcpServer(new IPEndPoint(IPAddress.Any, 7777));
+            serv.onTcpError = OnServerFail;
             serv.Listen();
             serv.onPeerConnected = OnConnected;
+
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -37,10 +39,24 @@ namespace CrossZero
             button1.Enabled = false;
             button2.Enabled = false;
             AsyncTcpClient client = new AsyncTcpClient(new IPEndPoint(IPAddress.Parse(textBox1.Text), 7777));
-            client.Connect();
+            client.onTcpError = OnDisconnected;
             client.onPeerConnected = OnConnected;
+            client.Connect();
         }
-
+        void OnServerFail(string fail)
+        {
+            button1.Enabled = true;
+            button2.Enabled = true;
+            button3.Enabled = false;
+            listBox1.Items.Add(fail);
+        }
+        void OnDisconnected(string text)
+        {
+            button1.Enabled = true;
+            button2.Enabled = true;
+            button3.Enabled = false;
+            listBox1.Items.Add(text);
+        }
         void OnConnected(Peer p)
         {
             listBox1.Items.Add("Connected to server!");
