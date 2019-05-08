@@ -32,7 +32,9 @@ namespace CrossZero
             if (win > 0) return win;
 
             win = CheckDiag(2,-1);
-            return win;
+            if (win > 0) return win;
+
+            return Draft();
         }
 
         public int CheckHor(int y)
@@ -62,6 +64,13 @@ namespace CrossZero
                 if (z != field[x, y]) return 0;
             }
             return z;
+        }
+        public int Draft()
+        {
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                    if (field[i, j] == 0) return 0;
+            return -1;
         }
     }
 }

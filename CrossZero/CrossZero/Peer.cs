@@ -11,7 +11,7 @@ namespace CrossZero
     public class Peer
     {
         public delegate void ReceiveMessage(string message);
-        public delegate void ReceiveWinner(bool win);
+        public delegate void ReceiveWinner(int win);
 
         public event ReceiveMessage onReceiveMessage;
         public event ReceiveMessage onReceiveStep;
@@ -57,10 +57,19 @@ namespace CrossZero
                         {
                             MyTurn = !MyTurn;
                             onReceiveStep.Invoke(c.Substring(1));
+
+                            int me1 = !IsServer ? 1 : 2;
+                            int pos = parseInt(c.Substring(1)) - 1;
+                            logic.Step(pos % 3, pos / 3, me1);
                         }
-                        else if (c.StartsWith("w"))
+                        else if (c.StartsWith("win"))
                         {
-                            onReceiveWinner.Invoke(false);
+                            onReceiveWinner.Invoke(0);
+                            MyTurn = false;
+                        }
+                        else if (c.StartsWith("draft"))
+                        {
+                            onReceiveWinner.Invoke(-1);
                             MyTurn = false;
                         }
                     }
@@ -88,8 +97,15 @@ namespace CrossZero
             if (win == me)
             {
                 client.GetStream().Flush();
-                Datas.WriteText(client.GetStream(), "w" + separator);
-                onReceiveWinner.Invoke(true);
+                Datas.WriteText(client.GetStream(), "win" + separator);
+                onReceiveWinner.Invoke(1);
+                MyTurn = false;
+            }
+            else if (win == -1)
+            {
+                client.GetStream().Flush();
+                Datas.WriteText(client.GetStream(), "draft" + separator);
+                onReceiveWinner.Invoke(-1);
                 MyTurn = false;
             }
         }
