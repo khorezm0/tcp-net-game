@@ -29,9 +29,9 @@ namespace CrossZero
             Text = "Server";
             panel1.Enabled = false;
             AsyncTcpServer serv = new AsyncTcpServer(new IPEndPoint(IPAddress.Any, 7777));
-            serv.onTcpError = OnServerFail;
+            serv.onTcpError += OnServerFail;
             serv.Listen();
-            serv.onPeerConnected = OnConnected;
+            serv.onPeerConnected += OnConnected;
 
         }
 
@@ -40,8 +40,8 @@ namespace CrossZero
             Text = "Client";
             panel1.Enabled = false;
             AsyncTcpClient client = new AsyncTcpClient(new IPEndPoint(IPAddress.Parse(textBox1.Text), 7777));
-            client.onTcpError = OnDisconnected;
-            client.onPeerConnected = OnConnected;
+            client.onTcpError += OnDisconnected;
+            client.onPeerConnected += OnConnected;
             client.Connect();
         }
         void OnServerFail(string fail)
@@ -63,12 +63,17 @@ namespace CrossZero
             panel1.Visible = false;
             listBox1.Items.Add("Connected to server!");
             peer = p;
-            peer.onReceiveMessage = (x) => { listBox1.Items.Add("peer: " + x); };
-            peer.onReceiveStep = (x) =>
+            peer.onReceiveMessage += (x) => { listBox1.Items.Add("peer: " + x); };
+            peer.onReceiveStep += (x) =>
             {
                 var pb = (PictureBox) (panel2.Controls.Find("pictureBox" + x, false)[0]);
                 if (!peer.IsServer) pb.Image = cross;
                 else pb.Image = circle;
+            };
+            peer.onReceiveWinner += (win) =>
+            {
+                if(win) listBox1.Items.Add("You win!");
+                else listBox1.Items.Add("You lose!");
             };
             button3.Enabled = true;
         }
@@ -88,10 +93,13 @@ namespace CrossZero
             if(peer != null && peer.MyTurn)
             { 
                 var pb = (PictureBox)sender;
-                var i = pb.Name.Replace("pictureBox", "");
-                peer.SendGameStep(i);
-                if (peer.IsServer) pb.Image = cross;
-                else pb.Image = circle;
+                if(pb.Image == null)
+                {
+                    var i = pb.Name.Replace("pictureBox", "");
+                    peer.SendGameStep(i);
+                    if (peer.IsServer) pb.Image = cross;
+                    else pb.Image = circle;
+                }
             }
             //MessageBox.Show(i);
             //panel2.Controls.Find();

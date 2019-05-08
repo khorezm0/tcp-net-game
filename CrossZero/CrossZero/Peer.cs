@@ -11,14 +11,19 @@ namespace CrossZero
     public class Peer
     {
         public delegate void ReceiveMessage(string message);
+        public delegate void ReceiveWinner(bool win);
 
-        public ReceiveMessage onReceiveMessage { get; set; }
-        public ReceiveMessage onReceiveStep { get; set; }
+        public event ReceiveMessage onReceiveMessage;
+        public event ReceiveMessage onReceiveStep;
+        public event ReceiveWinner onReceiveWinner;
 
         public bool IsServer { get; private set; }
         public bool MyTurn { get; private set; }
 
+        GameLogic logic = new GameLogic();
         TcpClient client;
+
+        const char separator = '\0';
 
         public Peer(TcpClient client, bool isServer)
         {
@@ -43,12 +48,21 @@ namespace CrossZero
                         str += Encoding.UTF8.GetString(buffer, 0, len);
                         if (!stream.DataAvailable) break;
                     }
-                    if (str.StartsWith("m"))
-                        onReceiveMessage?.Invoke(str.Substring(1));//is not null
-                    else if (str.StartsWith("s")) 
+                    string[] comms = str.Split(separator);
+                    foreach(var c in comms)
                     {
-                        MyTurn = !MyTurn;
-                        onReceiveStep?.Invoke(str.Substring(1));
+                        if (c.StartsWith("m"))
+                            onReceiveMessage.Invoke(c.Substring(1));//is not null
+                        else if (c.StartsWith("s"))
+                        {
+                            MyTurn = !MyTurn;
+                            onReceiveStep.Invoke(c.Substring(1));
+                        }
+                        else if (c.StartsWith("w"))
+                        {
+                            onReceiveWinner.Invoke(false);
+                            MyTurn = false;
+                        }
                     }
                 }
             }
@@ -57,15 +71,34 @@ namespace CrossZero
 
         public void SendChatMessage(string message)
         {
-            Datas.WriteText(client.GetStream(),"m"+ message);
+            message = message.Replace(separator, ' ');
+            Datas.WriteText(client.GetStream(),"m"+ message + separator);
         }
 
         public void SendGameStatus() { }
 
         public void SendGameStep(string step)
         {
+            int me = IsServer ? 1 : 2;
+            int pos = parseInt(step) - 1;
+            int win = logic.Step(pos % 3, pos / 3, me);
+
             MyTurn = !MyTurn;
-            Datas.WriteText(client.GetStream(), "s" + step);
+            Datas.WriteText(client.GetStream(), "s" + step + separator);
+            if (win == me)
+            {
+                client.GetStream().Flush();
+                Datas.WriteText(client.GetStream(), "w" + separator);
+                onReceiveWinner.Invoke(true);
+                MyTurn = false;
+            }
+        }
+
+        int parseInt(string str)
+        {
+            int i = 0;
+            int.TryParse(str, out i);
+            return i;
         }
     }
 }

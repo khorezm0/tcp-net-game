@@ -15,9 +15,11 @@ namespace CrossZero
 
         public IPEndPoint EndPoint { get; private set; }
         public Peer Client { get; private set; }
-        public OnPeerConnected onPeerConnected { get; set; }
-        public OnTcpError onTcpError { get; set; }
+        public event OnPeerConnected onPeerConnected;
+        public event OnTcpError onTcpError;
+
         TcpListener listener;
+        GameLogic logic = new GameLogic();
 
         public AsyncTcpServer(IPEndPoint endPoint) {
             EndPoint = endPoint;
@@ -31,11 +33,11 @@ namespace CrossZero
                 listener.Start();
                 Client = new Peer(await listener.AcceptTcpClientAsync(), true);
                 Client.ListenData();
-                onPeerConnected?.Invoke(Client);
+                onPeerConnected.Invoke(Client);
             }
             catch(Exception ex)
             {
-                onTcpError?.Invoke(ex.ToString());
+                onTcpError.Invoke(ex.ToString());
             }
 
 
