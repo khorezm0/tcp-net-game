@@ -13,7 +13,7 @@ namespace CrossZero
         public delegate void ReceiveMessage(string message);
 
         public ReceiveMessage onReceiveMessage { get; set; }
-
+        public ReceiveMessage onReceiveStep { get; set; }
         TcpClient client;
 
         public Peer(TcpClient client)
@@ -37,7 +37,9 @@ namespace CrossZero
                         str += Encoding.UTF8.GetString(buffer, 0, len);
                         if (!stream.DataAvailable) break;
                     }
-                    onReceiveMessage?.Invoke(str);//is not null
+                    if (str.StartsWith("m"))
+                        onReceiveMessage?.Invoke(str.Substring(1));//is not null
+                    else if (str.StartsWith("s")) onReceiveStep?.Invoke(str.Substring(1));
                 }
             }
             catch { }
@@ -45,9 +47,12 @@ namespace CrossZero
 
         public void SendChatMessage(string message)
         {
-            Datas.WriteText(client.GetStream(), message);
+            Datas.WriteText(client.GetStream(),"m"+ message);
         }
         public void SendGameStatus() { }
-
+        public void SendGameStep(string step)
+        {
+            Datas.WriteText(client.GetStream(), "s" + step);
+        }
     }
 }
