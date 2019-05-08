@@ -29,7 +29,7 @@ namespace CrossZero
             try
             {
                 listener.Start();
-                Client = new Peer(await listener.AcceptTcpClientAsync());
+                Client = new Peer(await listener.AcceptTcpClientAsync(), true);
                 Client.ListenData();
                 onPeerConnected?.Invoke(Client);
             }

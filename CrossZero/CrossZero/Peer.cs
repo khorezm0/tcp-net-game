@@ -14,11 +14,17 @@ namespace CrossZero
 
         public ReceiveMessage onReceiveMessage { get; set; }
         public ReceiveMessage onReceiveStep { get; set; }
+
+        public bool IsServer { get; private set; }
+        public bool MyTurn { get; private set; }
+
         TcpClient client;
 
-        public Peer(TcpClient client)
+        public Peer(TcpClient client, bool isServer)
         {
             this.client = client;
+            IsServer = isServer;
+            MyTurn = isServer;
         }
 
         public async void ListenData()
@@ -39,7 +45,11 @@ namespace CrossZero
                     }
                     if (str.StartsWith("m"))
                         onReceiveMessage?.Invoke(str.Substring(1));//is not null
-                    else if (str.StartsWith("s")) onReceiveStep?.Invoke(str.Substring(1));
+                    else if (str.StartsWith("s")) 
+                    {
+                        MyTurn = !MyTurn;
+                        onReceiveStep?.Invoke(str.Substring(1));
+                    }
                 }
             }
             catch { }
@@ -49,9 +59,12 @@ namespace CrossZero
         {
             Datas.WriteText(client.GetStream(),"m"+ message);
         }
+
         public void SendGameStatus() { }
+
         public void SendGameStep(string step)
         {
+            MyTurn = !MyTurn;
             Datas.WriteText(client.GetStream(), "s" + step);
         }
     }

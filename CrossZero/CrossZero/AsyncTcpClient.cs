@@ -30,7 +30,7 @@ namespace CrossZero
             try
             {
                 await tcp.ConnectAsync(EndPoint.Address, EndPoint.Port);
-                Client = new Peer(tcp);
+                Client = new Peer(tcp,false);
                 Client.ListenData();
                 onPeerConnected?.Invoke(Client);
             }

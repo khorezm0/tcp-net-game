@@ -67,7 +67,8 @@ namespace CrossZero
             peer.onReceiveStep = (x) =>
             {
                 var pb = (PictureBox) (panel2.Controls.Find("pictureBox" + x, false)[0]);
-                pb.Image = cross;
+                if (!peer.IsServer) pb.Image = cross;
+                else pb.Image = circle;
             };
             button3.Enabled = true;
         }
@@ -84,10 +85,14 @@ namespace CrossZero
 
         private void pictureBox4_Click(object sender, EventArgs e)
         {
-            var pb = (PictureBox)sender;
-            var i = pb.Name.Replace("pictureBox","");
-            pb.Image = (Image)cross;
-            peer.SendGameStep(i);
+            if(peer != null && peer.MyTurn)
+            { 
+                var pb = (PictureBox)sender;
+                var i = pb.Name.Replace("pictureBox", "");
+                peer.SendGameStep(i);
+                if (peer.IsServer) pb.Image = cross;
+                else pb.Image = circle;
+            }
             //MessageBox.Show(i);
             //panel2.Controls.Find();
         }
