@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28307.271
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrossZero", "CrossZero\CrossZero.csproj", "{306412C4-0418-496F-A3A3-38AECAE2E0D1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteDemo", "RemoteDemo\RemoteDemo.csproj", "{5F667FF5-A630-4E99-9965-22668EDAF923}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{306412C4-0418-496F-A3A3-38AECAE2E0D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{306412C4-0418-496F-A3A3-38AECAE2E0D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{306412C4-0418-496F-A3A3-38AECAE2E0D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F667FF5-A630-4E99-9965-22668EDAF923}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F667FF5-A630-4E99-9965-22668EDAF923}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F667FF5-A630-4E99-9965-22668EDAF923}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F667FF5-A630-4E99-9965-22668EDAF923}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

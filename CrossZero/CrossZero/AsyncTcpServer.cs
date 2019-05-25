@@ -33,6 +33,7 @@ namespace CrossZero
                 listener.Start();
                 Client = new Peer(await listener.AcceptTcpClientAsync(), true);
                 Client.ListenData();
+                Client.onSocketClose += ()=>{onTcpError("Disconnected!");};
                 onPeerConnected.Invoke(Client);
             }
             catch(Exception ex)

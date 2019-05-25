@@ -11,18 +11,13 @@ namespace CrossZero
     public class Peer
     {
         public delegate void ReceiveMessage(string message);
-        public delegate void ReceiveWinner(int win);
         public delegate void SocketClose();
 
         public event ReceiveMessage onReceiveMessage;
-        public event ReceiveMessage onReceiveStep;
-        public event ReceiveWinner onReceiveWinner;
         public event SocketClose onSocketClose;
 
         public bool IsServer { get; private set; }
-        public bool MyTurn { get; private set; }
 
-        GameLogic logic = new GameLogic();
         TcpClient client;
         DateTime oldPing;
 
@@ -32,7 +27,6 @@ namespace CrossZero
         {
             this.client = client;
             IsServer = isServer;
-            MyTurn = isServer;
             oldPing = DateTime.Now;
         }
         
@@ -57,25 +51,8 @@ namespace CrossZero
                     {
                         if (c.StartsWith("m"))
                             onReceiveMessage.Invoke(c.Substring(1));//is not null
-                        else if (c.StartsWith("s"))
-                        {
-                            MyTurn = !MyTurn;
-                            onReceiveStep.Invoke(c.Substring(1));
-
-                            int me1 = !IsServer ? 1 : 2;
-                            int pos = parseInt(c.Substring(1)) - 1;
-                            logic.Step(pos % 3, pos / 3, me1);
-                        }
-                        else if (c.StartsWith("win"))
-                        {
-                            onReceiveWinner.Invoke(0);
-                            MyTurn = false;
-                        }
-                        else if (c.StartsWith("draft"))
-                        {
-                            onReceiveWinner.Invoke(-1);
-                            MyTurn = false;
-                        }
+                        
+                        
                     }
                     if((DateTime.Now - oldPing).TotalSeconds > 0.1)
                     {
@@ -98,32 +75,6 @@ namespace CrossZero
         {
             message = message.Replace(separator, ' ');
             Datas.WriteText(client.GetStream(),"m"+ message + separator);
-        }
-
-        public void SendGameStatus() { }
-
-        public void SendGameStep(string step)
-        {
-            int me = IsServer ? 1 : 2;
-            int pos = parseInt(step) - 1;
-            int win = logic.Step(pos % 3, pos / 3, me);
-
-            MyTurn = !MyTurn;
-            Datas.WriteText(client.GetStream(), "s" + step + separator);
-            if (win == me)
-            {
-                client.GetStream().Flush();
-                Datas.WriteText(client.GetStream(), "win" + separator);
-                onReceiveWinner.Invoke(1);
-                MyTurn = false;
-            }
-            else if (win == -1)
-            {
-                client.GetStream().Flush();
-                Datas.WriteText(client.GetStream(), "draft" + separator);
-                onReceiveWinner.Invoke(-1);
-                MyTurn = false;
-            }
         }
 
         int parseInt(string str)
