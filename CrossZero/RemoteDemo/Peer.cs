@@ -6,15 +6,17 @@ using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
 
-namespace CrossZero
+namespace NetBase
 {
     public class Peer
     {
         public delegate void ReceiveMessage(string message);
+        public delegate void ReceiveBitmap(System.Drawing.Bitmap message);
         public delegate void SocketClose();
 
         public event ReceiveMessage onReceiveMessage;
         public event SocketClose onSocketClose;
+        public event ReceiveBitmap onReceiveBitmap;
 
         public bool IsServer { get; private set; }
 
@@ -29,11 +31,11 @@ namespace CrossZero
             IsServer = isServer;
             oldPing = DateTime.Now;
         }
-        
+
         public async void ListenData()
         {
-                var stream = client.GetStream();
-                var buffer = new byte[1024];
+            var stream = client.GetStream();
+            var buffer = new byte[1024];
             while (true)
             {
                 try
@@ -47,26 +49,30 @@ namespace CrossZero
                         if (!stream.DataAvailable) break;
                     }
                     string[] comms = str.Split(separator);
-                    foreach(var c in comms)
+                    foreach (var c in comms)
                     {
                         if (c.StartsWith("m"))
                             onReceiveMessage.Invoke(c.Substring(1));//is not null
-                        
-                        
+                        else if (c.StartsWith("s"))
+                        {
+                            var bmp = Datas.Base64ToBitmap(c.Substring(1));
+                            onReceiveBitmap(bmp);
+                        }
                     }
-                    if((DateTime.Now - oldPing).TotalSeconds > 0.1)
+                    if ((DateTime.Now - oldPing).TotalSeconds > 0.1)
                     {
-                        Datas.WriteText(client.GetStream(),"p"+ separator);
+                        Datas.WriteText(client.GetStream(), "p" + separator);
                         oldPing = DateTime.Now;
                     }
                 }
-                catch {
-                    
-                }
-                if(!client.Client.Connected)
+                catch
                 {
-                  onSocketClose();
-                  break;
+
+                }
+                if (!client.Client.Connected)
+                {
+                    onSocketClose();
+                    break;
                 }
             }
         }
@@ -74,7 +80,12 @@ namespace CrossZero
         public void SendChatMessage(string message)
         {
             message = message.Replace(separator, ' ');
-            Datas.WriteText(client.GetStream(),"m"+ message + separator);
+            Datas.WriteText(client.GetStream(), "m" + message + separator);
+        }
+
+        public void SendScreenData(System.Drawing.Bitmap base64)
+        {
+            Datas.WriteText(client.GetStream(), "s" + Datas.BitmapToBase64(base64) + separator);
         }
 
         int parseInt(string str)

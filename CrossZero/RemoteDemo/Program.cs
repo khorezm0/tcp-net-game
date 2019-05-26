@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,8 @@ namespace RemoteDemo
     {
         static void Main(string[] args)
         {
+            Application.EnableVisualStyles();
+            Application.Run(new ConnectionForm());
         }
     }
 }

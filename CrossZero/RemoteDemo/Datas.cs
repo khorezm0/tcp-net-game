@@ -1,11 +1,13 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
+using System.Drawing;
 
-namespace CrossZero
+namespace NetBase
 {
     public class Datas
     {
@@ -27,5 +29,28 @@ namespace CrossZero
             var txt = Encoding.UTF8.GetBytes(text);
             stream.Write(txt, 0, txt.Length);
         }
+
+        public static string BitmapToBase64(    Bitmap bmp)
+        {
+            byte[] byteImage = null;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                byteImage = ms.ToArray();
+            }
+            return Convert.ToBase64String(byteImage);
+        }
+
+        public static Bitmap Base64ToBitmap(string str)
+        {
+            byte[] bytes = Convert.FromBase64String(str);
+            Bitmap bmp = null;
+            using (MemoryStream ms = new MemoryStream(bytes))
+            {
+                bmp = new Bitmap(ms);
+            }
+            return bmp;
+        }
+
     }
 }
