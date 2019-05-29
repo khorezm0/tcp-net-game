@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace NetBase
 {
@@ -21,6 +22,8 @@ namespace NetBase
         public bool Listening { get; private set; }
 
         TcpListener listener;
+        Thread listenThread;
+        bool threadsWorking;
 
         public AsyncTcpServer(IPEndPoint endPoint) {
             EndPoint = endPoint;
@@ -28,29 +31,59 @@ namespace NetBase
             Clients = new List<Peer>();
         }
 
-        public async void Listen()
+        public void Listen()
+        {
+            Listening = true;
+            listenThread = new Thread(ListenTh);
+            listenThread.Start();
+        }
+
+        public void Stop()
+        {
+            Listening = false;
+            foreach (var p in Clients)
+            {
+                try
+                {
+                    p.Stop();
+                }
+                catch { }
+            }
+            listener.Stop();
+
+            if (listenThread != null && listenThread.IsAlive)
+                listenThread.Abort();
+        }
+
+        void ListenTh()
         {
             Listening = true;
             listener.Start();
             while (Listening)
             {
+                Peer Client = null;
                 try
                 {
-                    var Client = new Peer(await listener.AcceptTcpClientAsync(), true);
+                    var tcp = listener.AcceptTcpClient();
+                    Client = new Peer(tcp, true);
                     Clients.Add(Client);
                     Client.ListenData();
-                    Client.onSocketClose += ()=>{
+                    Client.onSocketClose += () => {
                         Clients.Remove(Client);
                         if (onTcpError != null) onTcpError("Disconnected!");
                     };
                     onPeerConnected.Invoke(Client);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    if(onTcpError != null) onTcpError.Invoke(ex.ToString());
+                    Console.WriteLine(ex);
+                    if (onTcpError != null)
+                    {
+                        onTcpError.Invoke(ex.ToString());
+                    }
+                    if (Client != null) Clients.Remove(Client);
                 }
             }
-
         }
 
         public void ForEachClient(Action<Peer> action)

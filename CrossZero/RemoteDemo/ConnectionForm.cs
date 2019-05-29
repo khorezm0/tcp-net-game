@@ -8,6 +8,10 @@ namespace RemoteDemo
 {
     public partial class ConnectionForm : Form
     {
+
+        AsyncTcpClient tcpClient;
+        AsyncTcpServer tcpServer;
+
         public ConnectionForm()
         {
             InitializeComponent();
@@ -17,55 +21,88 @@ namespace RemoteDemo
         {
             Peer peer;
             string ip = textBox1.Text;
-            IPEndPoint e = new IPEndPoint(IPAddress.Parse(ip), 7778);
-            AsyncTcpClient c = new AsyncTcpClient(e);
-            Rectangle size = Screen.PrimaryScreen.Bounds;
 
-            c.onPeerConnected += (p) => 
+            button1.Enabled = false;
+            button2.Hide();
+
+            try
             {
-                peer = p;
-                ViewForm form = new ViewForm();
-                form.Size = size.Size;
-                form.server = p;
-                form.Show();
-            };
-            c.onTcpError += (err) => 
+                IPEndPoint e = new IPEndPoint(IPAddress.Parse(ip), 7778);
+                tcpClient = new AsyncTcpClient(e);
+                Rectangle size = Screen.PrimaryScreen.Bounds;
+
+                tcpClient.onPeerConnected += (p) =>
+                {
+                    peer = p;
+                    ViewForm form = new ViewForm();
+                    form.Size = size.Size;
+                    form.server = p;
+                    form.Show();
+                };
+                tcpClient.onTcpError += (err) =>
+                {
+                    MessageBox.Show(err);
+                };
+                tcpClient.Connect();
+            }
+            catch
             {
-                MessageBox.Show(err);
-            };
-            c.Connect();
+                button1.Enabled = true;
+                button2.Show();
+            }
+
         }
+
 
         private void button2_Click(object sender, EventArgs args)
         {
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 7778);
-            AsyncTcpServer tcpServer = new AsyncTcpServer(endPoint);
+            button2.Enabled = false;
+            button1.Hide();
 
-
-            textBox1.Text = endPoint.Address.ToString();
-
-            Rectangle size = Screen.PrimaryScreen.Bounds;
-
-
-            tcpServer.onPeerConnected += (p) =>
+            try
             {
-                Timer t = new Timer();
-                t.Interval = 200;
-                t.Tick += (o, e) => 
+
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 7778);
+                tcpServer = new AsyncTcpServer(endPoint);
+
+
+                textBox1.Text = endPoint.Address.ToString();
+
+                Rectangle size = Screen.PrimaryScreen.Bounds;
+
+
+                tcpServer.onPeerConnected += (p) =>
                 {
-                    Bitmap img = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    using (var g = Graphics.FromImage(img))
+                    Invoke(new Action(() =>
                     {
-                        g.CopyFromScreen(new Point(), new Point(), size.Size);
-                    }
-                    p.SendScreenData(img);
+                        Timer t = new Timer();
+                        t.Interval = 100;
+                        t.Tick += (o, e) =>
+                        {
+                            Bitmap img = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                            using (var g = Graphics.FromImage(img))
+                            {
+                                g.CopyFromScreen(new Point(), new Point(), size.Size);
+                            }
+                            p.SendScreenData(img);
+                        };
+                        t.Start();
+                    }));
                 };
-                t.Start();
-            };
 
-            tcpServer.Listen();
+                tcpServer.Listen();
+            }
+            catch
+            {
+                button2.Enabled = true;
+                button1.Show();
+            }
+        }
 
-
+        private void FormClose(object sender, FormClosedEventArgs e)
+        {
+            if (tcpClient != null &&  tcpClient.) tcpClient.Client.Stop();
+            if (tcpServer != null) tcpServer.Stop();
         }
     }
 }

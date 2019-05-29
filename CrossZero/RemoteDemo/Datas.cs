@@ -14,7 +14,7 @@ namespace NetBase
         public static string ReadText(NetworkStream stream)
         {
             var str = "";
-            var buffer = new byte[64];
+            var buffer = new byte[1024];
             while (stream.DataAvailable)
             {
                 int len = stream.Read(buffer, 0, buffer.Length);
@@ -24,13 +24,39 @@ namespace NetBase
             return str;
         }
 
+        public static void ReadPart(NetworkStream stream, char separator, Action<string> chunkProcessing)
+        {
+            var str = new StringBuilder();
+            var buf = new byte[2056];
+
+            while (stream.DataAvailable)
+            {
+                int len = stream.Read(buf, 0, buf.Length);
+                if (len <= 0) break;
+                var ch = Encoding.UTF8.GetChars(buf, 0, len);
+                str.Append(ch);
+
+                for(int i = 0; i < str.Length; i++)
+                {
+                    if(str[i] == separator)
+                    {
+                        if(chunkProcessing != null)
+                            chunkProcessing(str.ToString(0, i));
+                        str.Remove(0, i + 1);
+                        i = 0;
+                    }
+                }
+
+            }
+        }
+
         public static void WriteText(NetworkStream stream, string text)
         {
             var txt = Encoding.UTF8.GetBytes(text);
             stream.Write(txt, 0, txt.Length);
         }
 
-        public static string BitmapToBase64(    Bitmap bmp)
+        public static string BitmapToBase64(Bitmap bmp)
         {
             byte[] byteImage = null;
             using (MemoryStream ms = new MemoryStream())

@@ -38,7 +38,17 @@ namespace NetBase
             catch (Exception ex)
             {
                 onTcpError.Invoke(ex.ToString());
+                Console.WriteLine(ex);
             }
         }
+
+        public void Disconnect()
+        {
+            if(tcp != null && tcp.Connected)
+            {
+                tcp.Close();
+            }
+        }
+
     }
 }

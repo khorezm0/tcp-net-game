@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="AsyncTcpClient.cs" />
     <Compile Include="AsyncTcpServer.cs" />
+    <Compile Include="BitmapChangesData.cs" />
     <Compile Include="ConnectionForm.cs">
       <SubType>Form</SubType>
     </Compile>

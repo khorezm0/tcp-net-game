@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
+using System.Threading;
 
 namespace NetBase
 {
@@ -32,47 +33,91 @@ namespace NetBase
             oldPing = DateTime.Now;
         }
 
-        public async void ListenData()
+        Thread listenThread;
+        Thread sendThread;
+        bool listening;
+
+        public void ListenData()
+        {
+            listening = true;
+            listenThread = new Thread(ListenDataTh);
+            sendThread = new Thread(SendThread);
+            listenThread.Start();
+            sendThread.Start();
+        }
+
+        public void Stop()
+        {
+            listening = false;
+            if (listenThread != null && listenThread.IsAlive)
+                listenThread.Abort();
+            if (sendThread != null && sendThread.IsAlive)
+                sendThread.Abort();
+        }
+
+        void ListenDataTh()
         {
             var stream = client.GetStream();
-            var buffer = new byte[1024];
-            while (true)
+            while (listening)
             {
                 try
                 {
-                    string str = "";
-                    while (true)
-                    {
-                        int len = await stream.ReadAsync(buffer, 0, buffer.Length);
-                        if (len == 0) break;
-                        str += Encoding.UTF8.GetString(buffer, 0, len);
-                        if (!stream.DataAvailable) break;
-                    }
-                    string[] comms = str.Split(separator);
-                    foreach (var c in comms)
-                    {
-                        if (c.StartsWith("m"))
-                            onReceiveMessage.Invoke(c.Substring(1));//is not null
-                        else if (c.StartsWith("s"))
-                        {
-                            var bmp = Datas.Base64ToBitmap(c.Substring(1));
-                            onReceiveBitmap(bmp);
-                        }
-                    }
+                    Datas.ReadPart(stream, separator, ProcessData);
                     if ((DateTime.Now - oldPing).TotalSeconds > 0.1)
                     {
-                        Datas.WriteText(client.GetStream(), "p" + separator);
+                        //Datas.WriteText(client.GetStream(), "p" + separator);
+                        sendQueue.AddLast("ping" + separator);
                         oldPing = DateTime.Now;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    Console.WriteLine(ex);
                 }
                 if (!client.Client.Connected)
                 {
                     onSocketClose();
                     break;
+                }
+                Thread.Sleep(100);
+            }
+
+            Console.WriteLine("End listen!");
+        }
+
+        void ProcessData(string data)
+        {
+            if (data.StartsWith("m"))
+            {
+                onReceiveMessage.Invoke(data.Substring(1));//is not null
+            }
+            else if (data.StartsWith("s"))
+            {
+                var bmp = Datas.Base64ToBitmap(data.Substring(1));
+                onReceiveBitmap(bmp);
+            }
+        }
+
+        LinkedList<string> sendQueue = new LinkedList<string>();
+        void SendThread()
+        {
+            while (listening)
+            {
+                try
+                {
+                    if (sendQueue.First != null)
+                    {
+                        Datas.WriteText(client.GetStream(), sendQueue.First.Value);
+                        sendQueue.RemoveFirst();
+                    }
+                    else
+                    {
+                        Thread.Sleep(50);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex);
                 }
             }
         }
@@ -80,12 +125,14 @@ namespace NetBase
         public void SendChatMessage(string message)
         {
             message = message.Replace(separator, ' ');
-            Datas.WriteText(client.GetStream(), "m" + message + separator);
+            //Datas.WriteText(client.GetStream(), "m" + message + separator);
+            sendQueue.AddLast("m" + message + separator);
         }
 
         public void SendScreenData(System.Drawing.Bitmap base64)
         {
-            Datas.WriteText(client.GetStream(), "s" + Datas.BitmapToBase64(base64) + separator);
+            //Datas.WriteText(client.GetStream(), "s" + Datas.BitmapToBase64(base64) + separator);
+            sendQueue.AddLast("s" + Datas.BitmapToBase64(base64) + separator);
         }
 
         int parseInt(string str)
