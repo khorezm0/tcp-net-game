@@ -26,10 +26,17 @@ namespace RemoteDemo
             {
                 MessageBox.Show(m);
             };
+            Bitmap oldBitmap = null;
             server.onReceiveBitmap += (b) =>
             {
+                oldBitmap = b;
                 pictureBox1.Image = b;
                 pictureBox1.Invalidate();
+            };
+
+            server.onReceivePartialBitmap += (b) => {
+                if(oldBitmap != null)
+                    b.ApplyChanges(oldBitmap);
             };
         }
     }

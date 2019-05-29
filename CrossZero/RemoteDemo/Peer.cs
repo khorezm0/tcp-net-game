@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
 using System.Threading;
+using RemoteDemo;
 
 namespace NetBase
 {
@@ -13,11 +14,13 @@ namespace NetBase
     {
         public delegate void ReceiveMessage(string message);
         public delegate void ReceiveBitmap(System.Drawing.Bitmap message);
+        public delegate void ReceivePartialBitmap(BitmapChangesData message);
         public delegate void SocketClose();
 
         public event ReceiveMessage onReceiveMessage;
         public event SocketClose onSocketClose;
         public event ReceiveBitmap onReceiveBitmap;
+        public event ReceivePartialBitmap onReceivePartialBitmap;
 
         public bool IsServer { get; private set; }
 
@@ -96,6 +99,12 @@ namespace NetBase
                 var bmp = Datas.Base64ToBitmap(data.Substring(1));
                 onReceiveBitmap(bmp);
             }
+            else if (data.StartsWith("c"))
+            {
+                var bmp = BitmapChangesData.Parse(data.Substring(1));
+                onReceivePartialBitmap(bmp);
+                System.Windows.Forms.MessageBox.Show(data);
+            }
         }
 
         LinkedList<string> sendQueue = new LinkedList<string>();
@@ -133,6 +142,12 @@ namespace NetBase
         {
             //Datas.WriteText(client.GetStream(), "s" + Datas.BitmapToBase64(base64) + separator);
             sendQueue.AddLast("s" + Datas.BitmapToBase64(base64) + separator);
+        }
+
+        public void SendScreenPartialData(BitmapChangesData datas)
+        {
+            if(datas!=null)
+                sendQueue.AddLast("c" + datas.GetBase64() + separator);
         }
 
         int parseInt(string str)

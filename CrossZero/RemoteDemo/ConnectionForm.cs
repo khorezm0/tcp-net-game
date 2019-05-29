@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Diagnostics;
 using System.Drawing;
 using System.Net;
 using System.Windows.Forms;
@@ -70,24 +72,35 @@ namespace RemoteDemo
 
                 Rectangle size = Screen.PrimaryScreen.Bounds;
 
+                
 
                 tcpServer.onPeerConnected += (p) =>
                 {
-                    Invoke(new Action(() =>
-                    {
-                        Timer t = new Timer();
-                        t.Interval = 100;
-                        t.Tick += (o, e) =>
+                    Thread tr = new Thread(new ThreadStart(
+                        () =>
                         {
-                            Bitmap img = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                            using (var g = Graphics.FromImage(img))
+                            Stopwatch t = new Stopwatch();
+                            Stopwatch t1 = new Stopwatch();
+                            t.Start();
+                            t1.Start();
+                            SendFullDataToPeer(p);
+
+                            while (Visible)
                             {
-                                g.CopyFromScreen(new Point(), new Point(), size.Size);
+                                if (t.ElapsedMilliseconds > 1000)
+                                {
+                                    SendFullDataToPeer(p);
+                                    t.Restart();
+                                }
+                                if (t1.ElapsedMilliseconds > 50)
+                                {
+                                    SendPartialDataToPeer(p);
+                                    t1.Restart();
+                                }
                             }
-                            p.SendScreenData(img);
-                        };
-                        t.Start();
                     }));
+
+                    tr.Start();
                 };
 
                 tcpServer.Listen();
@@ -99,9 +112,46 @@ namespace RemoteDemo
             }
         }
 
+        Bitmap oldbmp;
+
+        void SendFullDataToPeer(Peer p)
+        {
+            Rectangle size = Screen.PrimaryScreen.Bounds;
+
+            Bitmap img = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(img))
+            {
+                g.CopyFromScreen(new Point(), new Point(), size.Size);
+            }
+            img = Datas.ResizeImage(img, 256, 256);
+            oldbmp = img;
+
+            p.SendScreenData(img);
+        }
+
+        void SendPartialDataToPeer(Peer p)
+        {
+            if(oldbmp != null)
+            {
+
+                Rectangle size = Screen.PrimaryScreen.Bounds;
+
+                Bitmap img = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                using (var g = Graphics.FromImage(img))
+                {
+                    g.CopyFromScreen(new Point(), new Point(), size.Size);
+                }
+                img = Datas.ResizeImage(img, 256, 256);
+                oldbmp = img;
+
+                var changes = BitmapChangesData.GetChanges(oldbmp, img);
+                p.SendScreenPartialData(changes);
+            }
+        }
+
         private void FormClose(object sender, FormClosedEventArgs e)
         {
-            if (tcpClient != null &&  tcpClient.) tcpClient.Client.Stop();
+            if (tcpClient != null) tcpClient.Client.Stop();
             if (tcpServer != null) tcpServer.Stop();
         }
     }
