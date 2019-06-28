@@ -60,11 +60,17 @@ namespace CrossZero
             richTextBox1.Text += "Connected to server!\n";
             peer = p;
             peer.onReceiveMessage += (x) => { richTextBox1.Text += "peer: " + x + "\n"; };
+
+            if (p.MyTurn) richTextBox1.Text += "Your turn!\n";
+            else richTextBox1.Text += "Oppnent's turn!\n";
+
             peer.onReceiveStep += (x) =>
             {
                 var pb = (PictureBox) (panel2.Controls.Find("pictureBox" + x, false)[0]);
                 if (!peer.IsServer) pb.Image = cross;
                 else pb.Image = circle;
+                if (p.MyTurn) richTextBox1.Text += "Your turn!\n";
+                else richTextBox1.Text += "Oppnent's turn!\n";
             };
             peer.onReceiveWinner += (win) =>
             {
@@ -108,6 +114,7 @@ namespace CrossZero
                     peer.SendGameStep(i);
                     if (peer.IsServer) pb.Image = cross;
                     else pb.Image = circle;
+                    richTextBox1.Text += "Oppnent's turn!\n";
                 }
             }
             //MessageBox.Show(i);
